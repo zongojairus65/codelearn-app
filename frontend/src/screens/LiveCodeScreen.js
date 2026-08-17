@@ -11,7 +11,7 @@ const DEFAULT_CODE = {
 // Adresse du backend Spring Boot. À adapter selon ton déploiement.
 // - Emulateur Android : 10.0.2.2 pointe vers le localhost de ta machine hôte.
 // - Device physique : remplace par l'IP locale de ta machine, ou l'URL publique du backend.
-const API_BASE_URL = 'http://10.0.2.2:8080';
+const API_BASE_URL = 'https://codelearn-app-production-3ae0.up.railway.app';
 
 function buildDocument({ html, css, js }) {
   return `<!DOCTYPE html><html><head><style>${css}</style></head>
