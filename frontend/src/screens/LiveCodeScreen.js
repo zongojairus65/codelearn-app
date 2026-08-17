@@ -1,7 +1,6 @@
-import React, { useState, useCallback, useRef } from 'react';
-import { View, TextInput, StyleSheet, KeyboardAvoidingView, Platform, Pressable, Text, ScrollView } from 'react-native';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
+import { View, TextInput, StyleSheet, KeyboardAvoidingView, Platform, Pressable, Text, ScrollView, Animated } from 'react-native';
 import { WebView } from 'react-native-webview';
-import Animated, { FadeInUp, FadeIn } from 'react-native-reanimated';
 import { EXERCISES } from '../data/exercises';
 
 const API_BASE_URL = 'https://codelearn-app-production-3ae0.up.railway.app';
@@ -18,6 +17,8 @@ export default function LiveCodeScreen({ route }) {
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
   const timeoutRef = useRef(null);
+  const buttonScale = useRef(new Animated.Value(1)).current;
+  const resultAnim = useRef(new Animated.Value(0)).current;
 
   const updateField = useCallback((field, value) => {
     const next = { ...code, [field]: value };
@@ -25,6 +26,24 @@ export default function LiveCodeScreen({ route }) {
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
     timeoutRef.current = setTimeout(() => setSrcDoc(buildDocument(next)), 400);
   }, [code]);
+
+  useEffect(() => {
+    if (result) {
+      resultAnim.setValue(0);
+      Animated.timing(resultAnim, {
+        toValue: 1,
+        duration: 350,
+        useNativeDriver: true,
+      }).start();
+    }
+  }, [result]);
+
+  const onPressIn = () => {
+    Animated.spring(buttonScale, { toValue: 0.97, useNativeDriver: true }).start();
+  };
+  const onPressOut = () => {
+    Animated.spring(buttonScale, { toValue: 1, useNativeDriver: true }).start();
+  };
 
   const validateExercise = useCallback(async () => {
     setLoading(true);
@@ -95,31 +114,36 @@ export default function LiveCodeScreen({ route }) {
       />
 
       <View style={styles.actionBar}>
-        <Pressable
-          style={({ pressed }) => [styles.button, pressed && styles.buttonPressed]}
-          onPress={validateExercise}
-          disabled={loading}
-        >
-          <Text style={styles.buttonText}>{loading ? 'Validation...' : 'Valider'}</Text>
-        </Pressable>
+        <Animated.View style={{ transform: [{ scale: buttonScale }] }}>
+          <Pressable
+            style={styles.button}
+            onPress={validateExercise}
+            onPressIn={onPressIn}
+            onPressOut={onPressOut}
+            disabled={loading}
+          >
+            <Text style={styles.buttonText}>{loading ? 'Validation...' : 'Valider'}</Text>
+          </Pressable>
+        </Animated.View>
 
         {result && (
-          <Animated.View entering={FadeInUp.duration(300)} style={styles.resultBox}>
+          <Animated.View
+            style={[
+              styles.resultBox,
+              {
+                opacity: resultAnim,
+                transform: [
+                  { translateY: resultAnim.interpolate({ inputRange: [0, 1], outputRange: [12, 0] }) },
+                ],
+              },
+            ]}
+          >
             <ScrollView>
-              <Animated.Text
-                entering={FadeIn.duration(400)}
-                style={[styles.resultTitle, { color: result.passed ? '#22c55e' : '#ef4444' }]}
-              >
+              <Text style={[styles.resultTitle, { color: result.passed ? '#22c55e' : '#ef4444' }]}>
                 {result.passed ? '✓ Exercice réussi' : '✗ Pas encore correct'} (score: {result.score})
-              </Animated.Text>
+              </Text>
               {result.messages && result.messages.map((m, i) => (
-                <Animated.Text
-                  key={i}
-                  entering={FadeInUp.delay(i * 60).duration(300)}
-                  style={styles.resultMessage}
-                >
-                  {m}
-                </Animated.Text>
+                <Text key={i} style={styles.resultMessage}>{m}</Text>
               ))}
             </ScrollView>
           </Animated.View>
@@ -149,10 +173,6 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     paddingVertical: 12,
     alignItems: 'center',
-  },
-  buttonPressed: {
-    backgroundColor: '#1d4ed8',
-    transform: [{ scale: 0.98 }],
   },
   buttonText: { color: '#fff', fontWeight: '600', fontSize: 15 },
   resultBox: { marginTop: 8 },
