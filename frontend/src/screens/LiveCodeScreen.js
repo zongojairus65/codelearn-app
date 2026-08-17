@@ -1,16 +1,9 @@
 import React, { useState, useCallback, useRef } from 'react';
-import { View, TextInput, StyleSheet, KeyboardAvoidingView, Platform, Button, Text, ScrollView } from 'react-native';
+import { View, TextInput, StyleSheet, KeyboardAvoidingView, Platform, Pressable, Text, ScrollView } from 'react-native';
 import { WebView } from 'react-native-webview';
+import Animated, { FadeInUp, FadeIn } from 'react-native-reanimated';
+import { EXERCISES } from '../data/exercises';
 
-const DEFAULT_CODE = {
-  html: '<h1>Bonjour !</h1>\n<p>Modifie ce code.</p>',
-  css: 'h1 { color: #2563eb; font-family: sans-serif; }',
-  js: "document.querySelector('h1').addEventListener('click', () => alert('Clic !'));",
-};
-
-// Adresse du backend Spring Boot. À adapter selon ton déploiement.
-// - Emulateur Android : 10.0.2.2 pointe vers le localhost de ta machine hôte.
-// - Device physique : remplace par l'IP locale de ta machine, ou l'URL publique du backend.
 const API_BASE_URL = 'https://codelearn-app-production-3ae0.up.railway.app';
 
 function buildDocument({ html, css, js }) {
@@ -18,9 +11,10 @@ function buildDocument({ html, css, js }) {
 <body>${html}<script>${js}<\/script></body></html>`;
 }
 
-export default function LiveCodeScreen() {
-  const [code, setCode] = useState(DEFAULT_CODE);
-  const [srcDoc, setSrcDoc] = useState(buildDocument(DEFAULT_CODE));
+export default function LiveCodeScreen({ route }) {
+  const exercise = route?.params?.exercise ?? EXERCISES[0];
+  const [code, setCode] = useState(exercise.defaultCode);
+  const [srcDoc, setSrcDoc] = useState(buildDocument(exercise.defaultCode));
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
   const timeoutRef = useRef(null);
@@ -40,7 +34,7 @@ export default function LiveCodeScreen() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          exerciseId: 1,
+          exerciseId: exercise.id,
           html: code.html,
           css: code.css,
           js: code.js,
@@ -53,7 +47,7 @@ export default function LiveCodeScreen() {
     } finally {
       setLoading(false);
     }
-  }, [code]);
+  }, [code, exercise.id]);
 
   return (
     <KeyboardAvoidingView
@@ -101,16 +95,34 @@ export default function LiveCodeScreen() {
       />
 
       <View style={styles.actionBar}>
-        <Button title={loading ? 'Validation...' : 'Valider'} onPress={validateExercise} disabled={loading} />
+        <Pressable
+          style={({ pressed }) => [styles.button, pressed && styles.buttonPressed]}
+          onPress={validateExercise}
+          disabled={loading}
+        >
+          <Text style={styles.buttonText}>{loading ? 'Validation...' : 'Valider'}</Text>
+        </Pressable>
+
         {result && (
-          <ScrollView style={styles.resultBox}>
-            <Text style={[styles.resultTitle, { color: result.passed ? '#22c55e' : '#ef4444' }]}>
-              {result.passed ? '✓ Exercice réussi' : '✗ Pas encore correct'} (score: {result.score})
-            </Text>
-            {result.messages && result.messages.map((m, i) => (
-              <Text key={i} style={styles.resultMessage}>{m}</Text>
-            ))}
-          </ScrollView>
+          <Animated.View entering={FadeInUp.duration(300)} style={styles.resultBox}>
+            <ScrollView>
+              <Animated.Text
+                entering={FadeIn.duration(400)}
+                style={[styles.resultTitle, { color: result.passed ? '#22c55e' : '#ef4444' }]}
+              >
+                {result.passed ? '✓ Exercice réussi' : '✗ Pas encore correct'} (score: {result.score})
+              </Animated.Text>
+              {result.messages && result.messages.map((m, i) => (
+                <Animated.Text
+                  key={i}
+                  entering={FadeInUp.delay(i * 60).duration(300)}
+                  style={styles.resultMessage}
+                >
+                  {m}
+                </Animated.Text>
+              ))}
+            </ScrollView>
+          </Animated.View>
         )}
       </View>
     </KeyboardAvoidingView>
@@ -131,7 +143,18 @@ const styles = StyleSheet.create({
     textAlignVertical: 'top',
   },
   preview: { flex: 1 },
-  actionBar: { maxHeight: 160, padding: 8, backgroundColor: '#1e1e1e' },
+  actionBar: { maxHeight: 200, padding: 8, backgroundColor: '#1e1e1e' },
+  button: {
+    backgroundColor: '#2563eb',
+    borderRadius: 8,
+    paddingVertical: 12,
+    alignItems: 'center',
+  },
+  buttonPressed: {
+    backgroundColor: '#1d4ed8',
+    transform: [{ scale: 0.98 }],
+  },
+  buttonText: { color: '#fff', fontWeight: '600', fontSize: 15 },
   resultBox: { marginTop: 8 },
   resultTitle: { fontWeight: 'bold', fontSize: 14, marginBottom: 4 },
   resultMessage: { color: '#d4d4d4', fontSize: 12, marginBottom: 2 },
