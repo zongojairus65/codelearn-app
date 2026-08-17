@@ -14,3 +14,7 @@ backend/keystore.properties
 # Divers
 .DS_Store
 keystore_base64.txt
+frontend/android/app/release.keystore
+frontend/android/app/release.keystore.base64
+*.keystore
+*.keystore.base64
