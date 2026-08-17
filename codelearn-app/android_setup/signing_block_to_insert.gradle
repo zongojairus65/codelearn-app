@@ -1,0 +1,36 @@
+// À insérer dans frontend/android/app/build.gradle
+// Placer ce bloc au tout début du fichier, avant "android {"
+
+def keystorePropertiesFile = rootProject.file("keystore.properties")
+def keystoreProperties = new Properties()
+if (keystorePropertiesFile.exists()) {
+    keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
+}
+
+// -----------------------------------------------------------------
+// Dans le bloc "android { ... }" déjà existant, AJOUTE ces deux
+// sous-blocs (signingConfigs et l'entrée signingConfig dans release) :
+// -----------------------------------------------------------------
+
+/*
+android {
+    ...
+
+    signingConfigs {
+        release {
+            storeFile file("keystore/release.keystore")
+            storePassword System.getenv("KEYSTORE_PASSWORD") ?: keystoreProperties['storePassword']
+            keyAlias System.getenv("KEY_ALIAS") ?: keystoreProperties['keyAlias']
+            keyPassword System.getenv("KEY_PASSWORD") ?: keystoreProperties['keyPassword']
+        }
+    }
+
+    buildTypes {
+        release {
+            signingConfig signingConfigs.release
+            minifyEnabled enableProguardInReleaseBuilds
+            proguardFiles getDefaultProguardFile("proguard-android.pro"), "proguard-rules.pro"
+        }
+    }
+}
+*/

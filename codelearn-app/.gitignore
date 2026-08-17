@@ -1,0 +1,16 @@
+# Frontend
+frontend/node_modules/
+frontend/android/app/keystore/
+frontend/android/app/build/
+frontend/android/.gradle/
+frontend/android/local.properties
+frontend/ios/Pods/
+frontend/*.log
+
+# Backend
+backend/target/
+backend/keystore.properties
+
+# Divers
+.DS_Store
+keystore_base64.txt
