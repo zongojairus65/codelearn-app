@@ -5,6 +5,7 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import HomeScreen from './src/screens/HomeScreen';
 import LiveCodeScreen from './src/screens/LiveCodeScreen';
+import GenerateExerciseScreen from './src/screens/GenerateExerciseScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -32,6 +33,11 @@ export default function App() {
               name="LiveCode"
               component={LiveCodeScreen}
               options={({ route }) => ({ title: route.params?.exercise?.title ?? 'Exercice' })}
+            />
+            <Stack.Screen
+              name="GenerateExercise"
+              component={GenerateExerciseScreen}
+              options={{ title: 'Générer un exercice' }}
             />
           </Stack.Navigator>
         </NavigationContainer>

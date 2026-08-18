@@ -2,6 +2,7 @@ import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { View, TextInput, StyleSheet, KeyboardAvoidingView, Platform, Pressable, Text, ScrollView, Animated } from 'react-native';
 import { WebView } from 'react-native-webview';
 import { EXERCISES } from '../data/exercises';
+import AiChatPanel from '../components/AiChatPanel';
 
 const API_BASE_URL = 'https://codelearn-app-production-3ae0.up.railway.app';
 
@@ -114,6 +115,8 @@ export default function LiveCodeScreen({ route }) {
       />
 
       <View style={styles.actionBar}>
+        <AiChatPanel exerciseContext={`${exercise.title} : ${exercise.description}`} />
+
         <Animated.View style={{ transform: [{ scale: buttonScale }] }}>
           <Pressable
             style={styles.button}
@@ -167,7 +170,7 @@ const styles = StyleSheet.create({
     textAlignVertical: 'top',
   },
   preview: { flex: 1 },
-  actionBar: { maxHeight: 200, padding: 8, backgroundColor: '#1e1e1e' },
+  actionBar: { maxHeight: 320, padding: 8, backgroundColor: '#1e1e1e' },
   button: {
     backgroundColor: '#2563eb',
     borderRadius: 8,
