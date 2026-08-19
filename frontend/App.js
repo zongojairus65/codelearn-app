@@ -1,5 +1,5 @@
-import React from 'react';
-import { StatusBar, StyleSheet } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { StatusBar, StyleSheet, View, ActivityIndicator } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
@@ -7,10 +7,25 @@ import HomeScreen from './src/screens/HomeScreen';
 import ChapterPathScreen from './src/screens/ChapterPathScreen';
 import LiveCodeScreen from './src/screens/LiveCodeScreen';
 import GenerateExerciseScreen from './src/screens/GenerateExerciseScreen';
+import { getOrCreateUserId } from './src/services/userService';
 
 const Stack = createNativeStackNavigator();
 
 export default function App() {
+  const [ready, setReady] = useState(false);
+
+  useEffect(() => {
+    getOrCreateUserId().finally(() => setReady(true));
+  }, []);
+
+  if (!ready) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#2563eb" />
+      </View>
+    );
+  }
+
   return (
     <SafeAreaProvider>
       <SafeAreaView style={styles.safeArea}>
@@ -54,4 +69,5 @@ export default function App() {
 
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: '#121212' },
+  loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#121212' },
 });

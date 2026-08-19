@@ -3,6 +3,7 @@ import { View, TextInput, StyleSheet, KeyboardAvoidingView, Platform, Pressable,
 import { WebView } from 'react-native-webview';
 import { EXERCISES } from '../data/exercises';
 import AiChatPanel from '../components/AiChatPanel';
+import { getOrCreateUserId } from '../services/userService';
 
 const API_BASE_URL = 'https://codelearn-app-production-3ae0.up.railway.app';
 
@@ -11,12 +12,16 @@ function buildDocument({ html, css, js }) {
 <body>${html}<script>${js}<\/script></body></html>`;
 }
 
-export default function LiveCodeScreen({ route }) {
+export default function LiveCodeScreen({ route, navigation }) {
   const exercise = route?.params?.exercise ?? EXERCISES[0];
+  const chapterId = route?.params?.chapterId ?? null;
+
   const [code, setCode] = useState(exercise.defaultCode);
   const [srcDoc, setSrcDoc] = useState(buildDocument(exercise.defaultCode));
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [progressInfo, setProgressInfo] = useState(null);
+  const [savingProgress, setSavingProgress] = useState(false);
   const timeoutRef = useRef(null);
   const buttonScale = useRef(new Animated.Value(1)).current;
   const resultAnim = useRef(new Animated.Value(0)).current;
@@ -39,6 +44,12 @@ export default function LiveCodeScreen({ route }) {
     }
   }, [result]);
 
+  useEffect(() => {
+    if (result?.passed) {
+      saveProgress();
+    }
+  }, [result]);
+
   const onPressIn = () => {
     Animated.spring(buttonScale, { toValue: 0.97, useNativeDriver: true }).start();
   };
@@ -49,6 +60,7 @@ export default function LiveCodeScreen({ route }) {
   const validateExercise = useCallback(async () => {
     setLoading(true);
     setResult(null);
+    setProgressInfo(null);
     try {
       const res = await fetch(`${API_BASE_URL}/api/exercises/validate`, {
         method: 'POST',
@@ -68,6 +80,62 @@ export default function LiveCodeScreen({ route }) {
       setLoading(false);
     }
   }, [code, exercise.id]);
+
+  const saveProgress = async () => {
+    try {
+      setSavingProgress(true);
+      const userId = await getOrCreateUserId();
+      if (!userId) return;
+      const res = await fetch(`${API_BASE_URL}/api/progress/complete`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId,
+          exerciseId: exercise.id,
+          score: result?.score ?? 0,
+        }),
+      });
+      if (!res.ok) return;
+      const data = await res.json();
+      setProgressInfo(data);
+    } catch (err) {
+      // silencieux : la progression pourra se resynchroniser au retour sur le chemin
+    } finally {
+      setSavingProgress(false);
+    }
+  };
+
+  const handleNext = async () => {
+    if (progressInfo?.chapterCompleted || !progressInfo?.nextLessonId) {
+      navigation.goBack();
+      return;
+    }
+    try {
+      setLoading(true);
+      const res = await fetch(`${API_BASE_URL}/api/lessons/${progressInfo.nextLessonId}/exercises`);
+      const exercises = await res.json();
+      if (!exercises.length) {
+        navigation.goBack();
+        return;
+      }
+      const ex = exercises[0];
+      const mappedExercise = {
+        id: ex.id,
+        title: ex.title,
+        description: ex.instructions,
+        defaultCode: {
+          html: ex.starterHtml || '',
+          css: ex.starterCss || '',
+          js: ex.starterJs || '',
+        },
+      };
+      navigation.replace('LiveCode', { exercise: mappedExercise, chapterId });
+    } catch (err) {
+      navigation.goBack();
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <KeyboardAvoidingView
@@ -148,8 +216,27 @@ export default function LiveCodeScreen({ route }) {
               {result.messages && result.messages.map((m, i) => (
                 <Text key={i} style={styles.resultMessage}>{m}</Text>
               ))}
+              {result.passed && progressInfo && (
+                <Text style={styles.xpText}>+{progressInfo.xpEarned} XP · Niveau {progressInfo.level}</Text>
+              )}
             </ScrollView>
           </Animated.View>
+        )}
+
+        {result?.passed && (
+          <Pressable
+            style={[styles.nextButton, savingProgress && styles.nextButtonDisabled]}
+            onPress={handleNext}
+            disabled={savingProgress}
+          >
+            <Text style={styles.nextButtonText}>
+              {savingProgress
+                ? 'Enregistrement...'
+                : progressInfo?.chapterCompleted
+                ? 'Chapitre terminé 🎉'
+                : 'Leçon suivante →'}
+            </Text>
+          </Pressable>
         )}
       </View>
     </KeyboardAvoidingView>
@@ -170,7 +257,7 @@ const styles = StyleSheet.create({
     textAlignVertical: 'top',
   },
   preview: { flex: 1 },
-  actionBar: { maxHeight: 320, padding: 8, backgroundColor: '#1e1e1e' },
+  actionBar: { maxHeight: 380, padding: 8, backgroundColor: '#1e1e1e' },
   button: {
     backgroundColor: '#2563eb',
     borderRadius: 8,
@@ -178,7 +265,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   buttonText: { color: '#fff', fontWeight: '600', fontSize: 15 },
-  resultBox: { marginTop: 8 },
+  resultBox: { marginTop: 8, maxHeight: 100 },
   resultTitle: { fontWeight: 'bold', fontSize: 14, marginBottom: 4 },
   resultMessage: { color: '#d4d4d4', fontSize: 12, marginBottom: 2 },
+  xpText: { color: '#fbbf24', fontSize: 13, fontWeight: '600', marginTop: 4 },
+  nextButton: {
+    backgroundColor: '#22c55e',
+    borderRadius: 8,
+    paddingVertical: 12,
+    alignItems: 'center',
+    marginTop: 8,
+  },
+  nextButtonDisabled: { opacity: 0.6 },
+  nextButtonText: { color: '#fff', fontWeight: '700', fontSize: 15 },
 });

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -8,6 +8,8 @@ import {
   ActivityIndicator,
   Dimensions,
 } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
+import { getOrCreateUserId } from '../services/userService';
 
 const API_BASE = 'https://codelearn-app-production-3ae0.up.railway.app';
 const SCREEN_WIDTH = Dimensions.get('window').width;
@@ -21,15 +23,18 @@ export default function ChapterPathScreen({ route, navigation }) {
   const [error, setError] = useState(null);
   const [loadingLessonId, setLoadingLessonId] = useState(null);
 
-  useEffect(() => {
-    fetchLessons();
-  }, [chapterId]);
+  useFocusEffect(
+    useCallback(() => {
+      fetchProgress();
+    }, [chapterId])
+  );
 
-  const fetchLessons = async () => {
+  const fetchProgress = async () => {
     try {
       setLoading(true);
       setError(null);
-      const res = await fetch(`${API_BASE}/api/chapters/${chapterId}/lessons`);
+      const userId = await getOrCreateUserId();
+      const res = await fetch(`${API_BASE}/api/progress/chapters/${chapterId}?userId=${userId}`);
       if (!res.ok) throw new Error('Erreur de chargement');
       const data = await res.json();
       setLessons(data);
@@ -40,26 +45,20 @@ export default function ChapterPathScreen({ route, navigation }) {
     }
   };
 
-  // TODO étape suivante : brancher sur UserProgress pour le vrai statut
-  const getLessonStatus = (index) => {
-    if (index === 0) return 'unlocked';
-    return 'locked';
-  };
-
   const getBubbleStyle = (status) => {
-    if (status === 'completed') return styles.bubbleCompleted;
-    if (status === 'unlocked') return styles.bubbleUnlocked;
+    if (status === 'COMPLETED') return styles.bubbleCompleted;
+    if (status === 'UNLOCKED') return styles.bubbleUnlocked;
     return styles.bubbleLocked;
   };
 
   const getBubbleIcon = (status) => {
-    if (status === 'completed') return '✓';
-    if (status === 'unlocked') return '★';
+    if (status === 'COMPLETED') return '✓';
+    if (status === 'UNLOCKED') return '★';
     return '🔒';
   };
 
   const handlePressLesson = async (lesson, status) => {
-    if (status === 'locked' || loadingLessonId) return;
+    if (status === 'LOCKED' || loadingLessonId) return;
     try {
       setLoadingLessonId(lesson.id);
       const res = await fetch(`${API_BASE}/api/lessons/${lesson.id}/exercises`);
@@ -80,7 +79,7 @@ export default function ChapterPathScreen({ route, navigation }) {
           js: ex.starterJs || '',
         },
       };
-      navigation.navigate('LiveCode', { exercise: mappedExercise });
+      navigation.navigate('LiveCode', { exercise: mappedExercise, chapterId });
     } catch (err) {
       setError('Impossible de charger l\'exercice.');
     } finally {
@@ -106,7 +105,6 @@ export default function ChapterPathScreen({ route, navigation }) {
 
       <ScrollView contentContainerStyle={styles.pathContainer}>
         {lessons.map((lesson, index) => {
-          const status = getLessonStatus(index);
           const offset = ZIGZAG_OFFSETS[index % ZIGZAG_OFFSETS.length];
           const isLoadingThis = loadingLessonId === lesson.id;
 
@@ -114,15 +112,15 @@ export default function ChapterPathScreen({ route, navigation }) {
             <View key={lesson.id} style={styles.lessonRow}>
               <View style={[styles.bubbleWrapper, { marginLeft: SCREEN_WIDTH / 2 - BUBBLE_SIZE / 2 + offset }]}>
                 <TouchableOpacity
-                  style={[styles.bubble, getBubbleStyle(status)]}
-                  onPress={() => handlePressLesson(lesson, status)}
-                  activeOpacity={status === 'locked' ? 1 : 0.7}
-                  disabled={status === 'locked'}
+                  style={[styles.bubble, getBubbleStyle(lesson.status)]}
+                  onPress={() => handlePressLesson(lesson, lesson.status)}
+                  activeOpacity={lesson.status === 'LOCKED' ? 1 : 0.7}
+                  disabled={lesson.status === 'LOCKED'}
                 >
                   {isLoadingThis ? (
                     <ActivityIndicator size="small" color="#fff" />
                   ) : (
-                    <Text style={styles.bubbleIcon}>{getBubbleIcon(status)}</Text>
+                    <Text style={styles.bubbleIcon}>{getBubbleIcon(lesson.status)}</Text>
                   )}
                 </TouchableOpacity>
                 <Text style={styles.lessonLabel} numberOfLines={2}>
