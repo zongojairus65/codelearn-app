@@ -1,8 +1,9 @@
-import React, { useRef, useEffect } from 'react';
-import { View, Text, FlatList, Pressable, StyleSheet, Animated } from 'react-native';
-import { EXERCISES } from '../data/exercises';
+import React, { useEffect, useRef, useState } from 'react';
+import { View, Text, FlatList, Pressable, StyleSheet, Animated, ActivityIndicator } from 'react-native';
 
-function ExerciseCard({ item, index, onPress }) {
+const API_BASE = 'https://codelearn-app-production-3ae0.up.railway.app';
+
+function ChapterCard({ item, index, onPress }) {
   const anim = useRef(new Animated.Value(0)).current;
   const scale = useRef(new Animated.Value(1)).current;
 
@@ -38,7 +39,7 @@ function ExerciseCard({ item, index, onPress }) {
         onPressIn={onPressIn}
         onPressOut={onPressOut}
       >
-        <Text style={styles.cardTitle}>{item.title}</Text>
+        <Text style={styles.cardTitle}>{item.orderIndex}. {item.title}</Text>
         <Text style={styles.cardDescription}>{item.description}</Text>
       </Pressable>
     </Animated.View>
@@ -46,18 +47,60 @@ function ExerciseCard({ item, index, onPress }) {
 }
 
 export default function HomeScreen({ navigation }) {
+  const [chapters, setChapters] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    fetchChapters();
+  }, []);
+
+  const fetchChapters = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const res = await fetch(`${API_BASE}/api/chapters`);
+      if (!res.ok) throw new Error('Erreur de chargement');
+      const data = await res.json();
+      setChapters(data);
+    } catch (err) {
+      setError('Impossible de charger les chapitres.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <View style={styles.centered}>
+        <ActivityIndicator size="large" color="#2563eb" />
+      </View>
+    );
+  }
+
+  if (error) {
+    return (
+      <View style={styles.centered}>
+        <Text style={styles.errorText}>{error}</Text>
+        <Pressable onPress={fetchChapters} style={styles.retryButton}>
+          <Text style={styles.retryText}>Réessayer</Text>
+        </Pressable>
+      </View>
+    );
+  }
+
   return (
     <View style={styles.container}>
-      <Text style={styles.header}>Exercices</Text>
+      <Text style={styles.header}>Chapitres</Text>
       <FlatList
-        data={EXERCISES}
+        data={chapters}
         keyExtractor={(item) => String(item.id)}
         contentContainerStyle={styles.list}
         renderItem={({ item, index }) => (
-          <ExerciseCard
+          <ChapterCard
             item={item}
             index={index}
-            onPress={() => navigation.navigate('LiveCode', { exercise: item })}
+            onPress={() => navigation.navigate('ChapterPath', { chapterId: item.id, chapterTitle: item.title })}
           />
         )}
       />
@@ -85,4 +128,8 @@ const styles = StyleSheet.create({
   },
   cardTitle: { color: '#fff', fontSize: 16, fontWeight: '600', marginBottom: 4 },
   cardDescription: { color: '#a1a1aa', fontSize: 13 },
+  centered: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#121212' },
+  errorText: { color: '#f87171', fontSize: 15, marginBottom: 12 },
+  retryButton: { backgroundColor: '#2563eb', paddingVertical: 10, paddingHorizontal: 20, borderRadius: 8 },
+  retryText: { color: '#fff', fontWeight: 'bold' },
 });

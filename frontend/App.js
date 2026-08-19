@@ -4,6 +4,7 @@ import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import HomeScreen from './src/screens/HomeScreen';
+import ChapterPathScreen from './src/screens/ChapterPathScreen';
 import LiveCodeScreen from './src/screens/LiveCodeScreen';
 import GenerateExerciseScreen from './src/screens/GenerateExerciseScreen';
 
@@ -28,6 +29,11 @@ export default function App() {
               name="Home"
               component={HomeScreen}
               options={{ title: 'CodeLearn' }}
+            />
+            <Stack.Screen
+              name="ChapterPath"
+              component={ChapterPathScreen}
+              options={({ route }) => ({ title: route.params?.chapterTitle ?? 'Chapitre' })}
             />
             <Stack.Screen
               name="LiveCode"
