@@ -1,11 +1,12 @@
 package com.codelearn.api.model;
 
 import jakarta.persistence.*;
+import org.springframework.data.domain.Persistable;
 import java.time.LocalDate;
 
 @Entity
 @Table(name = "user_stats")
-public class UserStats {
+public class UserStats implements Persistable<Long> {
 
     @Id
     private Long userId;
@@ -31,6 +32,19 @@ public class UserStats {
 
     @Column(nullable = false)
     private Integer hearts = 5;
+
+    @Transient
+    private boolean isNewEntity = true;
+
+    @Override
+    public Long getId() { return userId; }
+
+    @Override
+    public boolean isNew() { return isNewEntity; }
+
+    @PrePersist
+    @PostLoad
+    void markNotNew() { this.isNewEntity = false; }
 
     public Long getUserId() { return userId; }
     public User getUser() { return user; }
