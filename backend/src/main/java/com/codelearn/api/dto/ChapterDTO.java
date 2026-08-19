@@ -1,6 +1,6 @@
-package com.codelearn.backend.dto;
+package com.codelearn.api.dto;
 
-import com.codelearn.backend.model.Chapter;
+import com.codelearn.api.model.Chapter;
 
 public class ChapterDTO {
     private Long id;

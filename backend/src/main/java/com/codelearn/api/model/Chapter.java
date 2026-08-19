@@ -1,4 +1,4 @@
-package com.codelearn.backend.model;
+package com.codelearn.api.model;
 
 import jakarta.persistence.*;
 

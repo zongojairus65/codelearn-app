@@ -1,6 +1,6 @@
-package com.codelearn.backend.repository;
+package com.codelearn.api.repository;
 
-import com.codelearn.backend.model.UserProgress;
+import com.codelearn.api.model.UserProgress;
 import org.springframework.data.jpa.repository.JpaRepository;
 import java.util.List;
 import java.util.Optional;

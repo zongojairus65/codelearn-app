@@ -1,8 +1,8 @@
-package com.codelearn.backend.controller;
+package com.codelearn.api.controller;
 
-import com.codelearn.backend.dto.ChapterDTO;
-import com.codelearn.backend.model.Chapter;
-import com.codelearn.backend.repository.ChapterRepository;
+import com.codelearn.api.dto.ChapterDTO;
+import com.codelearn.api.model.Chapter;
+import com.codelearn.api.repository.ChapterRepository;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
