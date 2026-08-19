@@ -5,6 +5,7 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import HomeScreen from './src/screens/HomeScreen';
 import ChapterPathScreen from './src/screens/ChapterPathScreen';
+import LessonDetailScreen from './src/screens/LessonDetailScreen';
 import LiveCodeScreen from './src/screens/LiveCodeScreen';
 import GenerateExerciseScreen from './src/screens/GenerateExerciseScreen';
 import { getOrCreateUserId } from './src/services/userService';
@@ -49,6 +50,11 @@ export default function App() {
               name="ChapterPath"
               component={ChapterPathScreen}
               options={({ route }) => ({ title: route.params?.chapterTitle ?? 'Chapitre' })}
+            />
+            <Stack.Screen
+              name="LessonDetail"
+              component={LessonDetailScreen}
+              options={({ route }) => ({ title: route.params?.lessonTitle ?? 'Leçon' })}
             />
             <Stack.Screen
               name="LiveCode"

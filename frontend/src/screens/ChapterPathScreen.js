@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -21,7 +21,6 @@ export default function ChapterPathScreen({ route, navigation }) {
   const [lessons, setLessons] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [loadingLessonId, setLoadingLessonId] = useState(null);
 
   useFocusEffect(
     useCallback(() => {
@@ -57,34 +56,9 @@ export default function ChapterPathScreen({ route, navigation }) {
     return '🔒';
   };
 
-  const handlePressLesson = async (lesson, status) => {
-    if (status === 'LOCKED' || loadingLessonId) return;
-    try {
-      setLoadingLessonId(lesson.id);
-      const res = await fetch(`${API_BASE}/api/lessons/${lesson.id}/exercises`);
-      if (!res.ok) throw new Error('Erreur');
-      const exercises = await res.json();
-      if (!exercises.length) {
-        setError('Aucun exercice pour cette leçon.');
-        return;
-      }
-      const ex = exercises[0];
-      const mappedExercise = {
-        id: ex.id,
-        title: ex.title,
-        description: ex.instructions,
-        defaultCode: {
-          html: ex.starterHtml || '',
-          css: ex.starterCss || '',
-          js: ex.starterJs || '',
-        },
-      };
-      navigation.navigate('LiveCode', { exercise: mappedExercise, chapterId });
-    } catch (err) {
-      setError('Impossible de charger l\'exercice.');
-    } finally {
-      setLoadingLessonId(null);
-    }
+  const handlePressLesson = (lesson, status) => {
+    if (status === 'LOCKED') return;
+    navigation.navigate('LessonDetail', { lessonId: lesson.id, chapterId, lessonTitle: lesson.title });
   };
 
   if (loading) {
@@ -106,7 +80,6 @@ export default function ChapterPathScreen({ route, navigation }) {
       <ScrollView contentContainerStyle={styles.pathContainer}>
         {lessons.map((lesson, index) => {
           const offset = ZIGZAG_OFFSETS[index % ZIGZAG_OFFSETS.length];
-          const isLoadingThis = loadingLessonId === lesson.id;
 
           return (
             <View key={lesson.id} style={styles.lessonRow}>
@@ -117,11 +90,7 @@ export default function ChapterPathScreen({ route, navigation }) {
                   activeOpacity={lesson.status === 'LOCKED' ? 1 : 0.7}
                   disabled={lesson.status === 'LOCKED'}
                 >
-                  {isLoadingThis ? (
-                    <ActivityIndicator size="small" color="#fff" />
-                  ) : (
-                    <Text style={styles.bubbleIcon}>{getBubbleIcon(lesson.status)}</Text>
-                  )}
+                  <Text style={styles.bubbleIcon}>{getBubbleIcon(lesson.status)}</Text>
                 </TouchableOpacity>
                 <Text style={styles.lessonLabel} numberOfLines={2}>
                   {lesson.orderIndex}. {lesson.title}

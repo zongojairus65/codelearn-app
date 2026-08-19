@@ -105,36 +105,9 @@ export default function LiveCodeScreen({ route, navigation }) {
     }
   };
 
-  const handleNext = async () => {
-    if (progressInfo?.chapterCompleted || !progressInfo?.nextLessonId) {
-      navigation.goBack();
-      return;
-    }
-    try {
-      setLoading(true);
-      const res = await fetch(`${API_BASE_URL}/api/lessons/${progressInfo.nextLessonId}/exercises`);
-      const exercises = await res.json();
-      if (!exercises.length) {
-        navigation.goBack();
-        return;
-      }
-      const ex = exercises[0];
-      const mappedExercise = {
-        id: ex.id,
-        title: ex.title,
-        description: ex.instructions,
-        defaultCode: {
-          html: ex.starterHtml || '',
-          css: ex.starterCss || '',
-          js: ex.starterJs || '',
-        },
-      };
-      navigation.replace('LiveCode', { exercise: mappedExercise, chapterId });
-    } catch (err) {
-      navigation.goBack();
-    } finally {
-      setLoading(false);
-    }
+  const handleNext = () => {
+    // Retour au chemin du chapitre : LessonDetail se charge d'afficher la leçon suivante
+    navigation.navigate('ChapterPath', { chapterId });
   };
 
   return (
@@ -234,7 +207,7 @@ export default function LiveCodeScreen({ route, navigation }) {
                 ? 'Enregistrement...'
                 : progressInfo?.chapterCompleted
                 ? 'Chapitre terminé 🎉'
-                : 'Leçon suivante →'}
+                : 'Continuer →'}
             </Text>
           </Pressable>
         )}
